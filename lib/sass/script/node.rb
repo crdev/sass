@@ -13,6 +13,11 @@ module Sass::Script
     # @return [Fixnum]
     attr_accessor :line
 
+    # The node source range in the document on which this node appeared.
+    #
+    # @return [Sass::Tree::SourceRange]
+    attr_accessor :source_range
+
     # Sets the options hash for this node,
     # as well as for all child nodes.
     # See {file:SASS_REFERENCE.md#sass_options the Sass options documentation}.

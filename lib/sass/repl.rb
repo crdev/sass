@@ -34,8 +34,8 @@ module Sass
       case text
       when Script::MATCH
         name = $1
-        guarded = !!$3
-        val = Script::Parser.parse($2, @line, text.size - ($3 || '').size - $2.size)
+        guarded = !!$5
+        val = Script::Parser.parse($4, @line, text.size - ($5 || '').size - $4.size)
 
         unless guarded && environment.var(name)
           environment.set_var(name, val.perform(environment))

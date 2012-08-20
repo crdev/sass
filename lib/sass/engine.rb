@@ -26,6 +26,10 @@ require 'sass/tree/debug_node'
 require 'sass/tree/warn_node'
 require 'sass/tree/import_node'
 require 'sass/tree/charset_node'
+require 'sass/tree/source_position'
+require 'sass/tree/source_range'
+require 'sass/tree/source_mapping'
+require 'sass/tree/sourcemap_builder'
 require 'sass/tree/visitors/base'
 require 'sass/tree/visitors/perform'
 require 'sass/tree/visitors/cssize'
@@ -262,7 +266,21 @@ module Sass
       return _render unless @options[:quiet]
       Sass::Util.silence_sass_warnings {_render}
     end
+
+    # Render the template to CSS.
+    #
+    # @return [Array] [CSS_Text, Source_Mapping]
+    # @raise [Sass::SyntaxError] if there's an error in the document
+    # @raise [Encoding::UndefinedConversionError] if the source encoding
+    #   cannot be converted to UTF-8
+    # @raise [ArgumentError] if the document uses an unknown encoding with `@charset`
+    def render_with_sourcemap
+      return _render_with_sourcemap unless @options[:quiet]
+      Sass::Util.silence_sass_warnings {_render}
+    end
+
     alias_method :to_css, :render
+    alias_method :to_css_with_sourcemap, :render_with_sourcemap
 
     # Parses the document into its parse tree. Memoized.
     #
@@ -322,6 +340,20 @@ module Sass
       end
       rendered.gsub(Regexp.new('\A@charset "(.*?)"'.encode(source_encoding)),
         "@charset \"#{source_encoding.name}\"".encode(source_encoding))
+    end
+
+    def _render_with_sourcemap
+      rendered = _to_tree.render_with_sourcemap
+      return rendered if ruby1_8?
+      begin
+        # Try to convert the result to the original encoding,
+        # but if that doesn't work fall back on UTF-8
+        rendered[0] = rendered[0].encode(source_encoding)
+      rescue EncodingError
+      end
+      rendered[0].gsub!(Regexp.new('\A@charset "(.*?)"'.encode(source_encoding)),
+        "@charset \"#{source_encoding.name}\"".encode(source_encoding))
+      rendered
     end
 
     def _to_tree
@@ -618,7 +650,7 @@ WARNING
     end
 
     def parse_variable(line)
-      name, value, default = line.text.scan(Script::MATCH)[0]
+      name, preColonSpace, postColonSpace, value, default = line.text.scan(Script::MATCH)[0]
       raise SyntaxError.new("Illegal nesting: Nothing may be nested beneath variable declarations.",
         :line => @line + 1) unless line.children.empty?
       raise SyntaxError.new("Invalid variable: \"#{line.text}\".",

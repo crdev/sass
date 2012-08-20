@@ -1,4 +1,5 @@
 require 'sass/script/literal'
+require 'sass/util'
 
 module Sass::Script
   # A SassScript object representing a CSS color.

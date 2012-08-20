@@ -19,6 +19,12 @@ module Sass::Script
     # @return [Object]
     attr_reader :value
 
+    # @return [Sass::Tree::SourceRange]
+    attr_accessor :source_range
+    
+    # @return [String]
+    attr_accessor :filename
+
     # Creates a new literal.
     #
     # @param value [Object] The object for \{#value}
